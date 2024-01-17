@@ -1,0 +1,72 @@
+#include "Ulti.h"
+
+int ulti::MergeString(PWCHAR des, int size , PWCHAR src1, PWCHAR src2)
+{
+	int size1 = GetWStringSize(src1);
+	int size2 = GetWStringSize(src2);
+	if (size1 + size2 > size)
+	{
+		return 0;
+	}
+	RtlCopyMemory(&des[0], src1, size1 * sizeof(WCHAR));
+	RtlCopyMemory(&des[size1], src2, size2 * sizeof(WCHAR));
+	return size1 + size2;
+}
+
+int ulti::GetWStringSize(PWCHAR str)
+{
+	for (int i = 0; ; i++)
+	{
+		if (str[i] == 0)
+		{
+			return i;
+		}
+	}
+}
+
+BOOLEAN ulti::CheckSubstring(
+    PWCHAR string,
+    PWCHAR sub_string)
+{
+    UNREFERENCED_PARAMETER(sub_string);
+    int string_len;
+    int sub_string_len;
+
+    for (string_len = 0; ; string_len++)
+    {
+        if (string[string_len] == 0 || string_len > MAX_SIZE)
+        {
+            break;
+        }
+    }
+
+    for (sub_string_len = 0; ; sub_string_len++)
+    {
+        if (sub_string[sub_string_len] == 0)
+        {
+            break;
+        }
+    }
+
+    if (string_len == 0 || string_len > MAX_SIZE || sub_string_len == 0)
+    {
+        return false;
+    }
+
+    for (int i = 0; i <= string_len - sub_string_len; i++)
+    {
+        int j;
+        for (j = 0; j < sub_string_len; j++)
+        {
+            if (string[i + j] != sub_string[j])
+                break;
+        }
+
+        if (j == sub_string_len)
+        {
+            return true;
+        }
+    }
+    return false;
+
+}
