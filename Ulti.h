@@ -24,5 +24,8 @@ struct _CUSTOM_EPROCESS
     UCHAR ProcessLock[0x8];                                                 //0x438
     VOID* UniqueProcesId;                                                   //0x440
     struct _LIST_ENTRY ActiveProcessLinks;                                  //0x448;
+    UCHAR padding[0x160];
+    UCHAR ImageFileName[15];                                                //0x5a8
+
 };
 typedef _CUSTOM_EPROCESS CUSTOM_EPROCESS, *P_CUSTOM_EPROCESS;

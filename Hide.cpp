@@ -4,7 +4,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT driver_object, PUNICODE_STRING registry_path
 {
     NTSTATUS status = STATUS_SUCCESS;
 
-    ExInitializeDriverRuntime(DrvRtPoolNxOptIn);
+    // ExInitializeDriverRuntime(DrvRtPoolNxOptIn);
 
     UNREFERENCED_PARAMETER(registry_path);
     // DebugMessage("PFMinifilter!DriverEntry: Entered\n");
@@ -42,6 +42,7 @@ NTSTATUS FilterUnload(FLT_FILTER_UNLOAD_FLAGS flags)
 
     // File Filter Unload must always at the last of the Unload rountine
     filter::FileFilter::Unload();
+
     return STATUS_SUCCESS;
 }
 
@@ -49,5 +50,6 @@ NTSTATUS DriverUnload(PDRIVER_OBJECT driver_object)
 {
     UNREFERENCED_PARAMETER(driver_object);
     filter::ProcessHider::Unload();
+
     return STATUS_SUCCESS;
 }
