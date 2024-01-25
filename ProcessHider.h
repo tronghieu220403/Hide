@@ -10,14 +10,17 @@
 
 namespace filter
 {
+
     class ProcessHider
     {
+    private:
+        static inline KGUARDED_MUTEX process_lock_ = { 0 };
     public:
         static NTSTATUS Register();
 
         static void HideOnInitializeOperation();
 
-        static void HideOnCreateOperation(P_CUSTOM_EPROCESS process, HANDLE pid, PPS_CREATE_NOTIFY_INFO create_info);
+        static void HideOnCreateOperation(P_CUSTOM_EPROCESS p_eprocess, HANDLE pid, PPS_CREATE_NOTIFY_INFO create_info);
 
         static void Unload();
 
