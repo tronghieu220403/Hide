@@ -66,7 +66,6 @@ namespace filter
 				DebugMessage("Hide oke");
 			}
 			
-			ExFreePool(process_name->Buffer);
 		}
 	}
 
