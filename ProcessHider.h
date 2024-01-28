@@ -20,12 +20,12 @@ namespace filter
 
         static void HideOnInitializeOperation();
 
-        static void HideOnCreateOperation(P_CUSTOM_EPROCESS p_eprocess, HANDLE pid, PPS_CREATE_NOTIFY_INFO create_info);
+        static void HideOnCreateOperation(P_CUSTOM_EPROCESS peprocess, HANDLE pid, PPS_CREATE_NOTIFY_INFO create_info);
 
         static void Unload();
 
         static bool IsProcessInHiddenList(PWCHAR process_name);
 
-        static bool HideProcess(HANDLE pid);
+        static bool HideProcess(P_CUSTOM_EPROCESS peprocess);
     };
 }
