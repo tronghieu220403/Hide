@@ -13,7 +13,7 @@ namespace ulti
 	
 	int GetWstringSize(PWCHAR str);
 
-    BOOLEAN CheckSubstring(PWCHAR string, PWCHAR sub_string);
+    bool CheckSubstring(PWCHAR string, PWCHAR sub_string);
 
     void SetUlongAt(long long addr, ULONG value);
 

@@ -24,7 +24,7 @@ int ulti::GetWstringSize(PWCHAR str)
 	}
 }
 
-BOOLEAN ulti::CheckSubstring(
+bool ulti::CheckSubstring(
     PWCHAR string,
     PWCHAR sub_string)
 {
@@ -71,7 +71,7 @@ BOOLEAN ulti::CheckSubstring(
 
 }
 
-void ulti::SetUlongAt(long long addr, ULONG value);
+void ulti::SetUlongAt(long long addr, ULONG value)
 {
     *(ULONG *)addr = value;
 }
