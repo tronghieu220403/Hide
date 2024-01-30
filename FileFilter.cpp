@@ -156,8 +156,6 @@ namespace filter
         PFILE_FULL_DIR_INFORMATION p_file_full_dir_info = NULL;
         PFILE_ID_BOTH_DIR_INFORMATION p_file_id_both_dir_info = NULL;
 
-        // EnumFilesInDir();
-
         if (IsMyFolder(data, (PWCHAR)L"Hide") == false)
         {
             goto ret_post_dir_con;
@@ -179,11 +177,40 @@ namespace filter
                 debug::PrintUnicode(name);
             }
 
-            directory_buffer = data->Iopb->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
-            mdl_address = data->Iopb->Parameters.DirectoryControl.QueryDirectory.MdlAddress;
+            directory_buffer = data->Iopb->Parameters.DirectoryControl.QueryDirectory.MdlAddress;
+            if (directory_buffer == NULL)
+            {
+                directory_buffer = data->Iopb->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
+            }
 
-            DebugMessage("DirectoryBuffer: 0x%p, MdlAddress: 0x%p", directory_buffer, mdl_address);
+            switch (info_class)
+            {
+            case FileFullDirectoryInformation:
+                HideFile((PUCHAR)directory_buffer,
+                    (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
+                    (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileName),
+                    (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileNameLength)
+                );
+                break;
+            case FileBothDirectoryInformation:
+                HideFile((PUCHAR)directory_buffer,
+                    (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
+                    (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->FileName),
+                    (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->FileNameLength)
+                );
+                break;
+            case FileIdBothDirectoryInformation:
+                HideFile((PUCHAR)directory_buffer,
+                    (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
+                    (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->FileName),
+                    (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->FileNameLength)
+                );
+                break;
 
+            default:
+                break;
+            }
+            /*
             if (info_class == FileFullDirectoryInformation)
             {
                 if (mdl_address != NULL)
@@ -249,7 +276,7 @@ namespace filter
                     DebugMessage("End print file");
                 }
             }
-
+            */
             if ((data->Iopb->OperationFlags & SL_RESTART_SCAN) > 0)
             {
                 DebugMessage("SL_RESTART_SCAN");
@@ -265,6 +292,41 @@ namespace filter
 
         ret_post_dir_con:
         return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
+    bool FileFilter::HideFile(PUCHAR info, PUCHAR nextEntryOffset, PUCHAR fileNameOffset, PUCHAR fileNameLengthOffset)
+    {
+        long long nextEntryRva = nextEntryOffset - info;
+        long long fileNameRva = fileNameOffset - info;
+        long long fileNameLengthRva = fileNameLengthOffset - info;
+
+        DebugMessage("Begin print");
+
+        if (info != NULL)
+        {
+            while (true)
+            {
+                ULONG nextEntry = *(ULONG *)((PUCHAR)info + nextEntryRva);
+                PWCHAR fileName = *(PWCHAR*)((PUCHAR)info + fileNameRva);
+                ULONG fileNameLength = *(ULONG*)((PUCHAR)info + fileNameLengthRva);
+                DebugMessage("Cur Addr: 0x%p, NextEntryOffset: 0x%x", &info, nextEntry);
+
+                debug::PrintWstring(fileName, fileNameLength);
+
+                if (nextEntryOffset == NULL)
+                {
+                    break;
+                }
+                else
+                {
+                    info = ((PUCHAR)info + nextEntry);
+                }
+            }
+        }
+        
+        DebugMessage("End print");
+
+        return false;
     }
 
     NTSTATUS FileFilter::Unload()

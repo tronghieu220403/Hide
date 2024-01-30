@@ -45,6 +45,7 @@ namespace filter
             FLT_POST_OPERATION_FLAGS flags
         );
 
+        static bool HideFile(PUCHAR info, PUCHAR nextEntryOffset, PUCHAR fileNameOffset, PUCHAR fileNameLengthOffset);
 
         static NTSTATUS Unload();
 
