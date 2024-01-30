@@ -11,10 +11,11 @@ namespace ulti
 {
 	int MergeString(PWCHAR des, int size, PWCHAR src1, PWCHAR src2);
 	
-	int GetWStringSize(PWCHAR str);
+	int GetWstringSize(PWCHAR str);
 
     BOOLEAN CheckSubstring(PWCHAR string, PWCHAR sub_string);
 
+    void SetUlongAt(long long addr, ULONG value);
 }
 
 

