@@ -163,19 +163,10 @@ namespace filter
 
         if (data->Iopb->MinorFunction == IRP_MN_QUERY_DIRECTORY)
         {
-            DebugMessage("\n");
-            DebugMessage("IRP_MN_QUERY_DIRECTORY");
-
             name = data->Iopb->Parameters.DirectoryControl.QueryDirectory.FileName;
 
             info_class = data->Iopb->Parameters.DirectoryControl.QueryDirectory.FileInformationClass;
             PrintFileInfoClass(info_class);
-
-            if (name != NULL && name->Buffer != NULL && name->Length != 0)
-            {
-                DebugMessage("File name with length: 0x%x, max length 0x%x, buffer: %p", name->Length, name->MaximumLength, name->Buffer);
-                debug::PrintUnicode(name);
-            }
 
             directory_buffer = data->Iopb->Parameters.DirectoryControl.QueryDirectory.MdlAddress;
             if (directory_buffer == NULL)
@@ -220,9 +211,6 @@ namespace filter
             }
         }
 
-        DebugMessage("In directory: ");
-        PrintCurFileName(data);
-
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
@@ -239,12 +227,6 @@ namespace filter
 
 
         DebugMessage("Begin print");
-        /*
-        DebugMessage("%p", info);
-        DebugMessage("%I64d", nextEntryRva);
-        DebugMessage("%I64d", fileNameRva);
-        DebugMessage("%I64d", fileNameLengthRva);
-        */
         if (info != NULL)
         {
             while (true)
@@ -252,8 +234,6 @@ namespace filter
                 ULONG nextEntryCur = *(ULONG *)((PUCHAR)info + nextEntryRva);
                 PWCHAR fileName = (PWCHAR)((PUCHAR)info + fileNameRva);
                 ULONG fileNameLength = *(ULONG*)((PUCHAR)info + fileNameLengthRva);
-                // DebugMessage("Cur Addr: 0x%p, NextEntryOffset: 0x%x", info, nextEntryCur);
-                // DebugMessage("fileName: 0x%p, fileNameLength: 0x%x", fileName, fileNameLength);
 
                 debug::PrintWstring(fileName, fileNameLength);
                 /*
