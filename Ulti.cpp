@@ -48,7 +48,12 @@ bool ulti::CheckSubstring(
         }
     }
 
-    if (string_len == 0 || string_len > MAX_SIZE || sub_string_len == 0)
+    if (string_len == 0 || string_len > MAX_SIZE || sub_string_len == 0 || sub_string_len > MAX_SIZE)
+    {
+        return false;
+    }
+
+    if (string_len < sub_string_len)
     {
         return false;
     }

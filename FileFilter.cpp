@@ -239,26 +239,24 @@ namespace filter
 
 
         DebugMessage("Begin print");
-
+        /*
+        DebugMessage("%p", info);
         DebugMessage("%I64d", nextEntryRva);
         DebugMessage("%I64d", fileNameRva);
         DebugMessage("%I64d", fileNameLengthRva);
-
-        DebugMessage("End print");
-        return true;
-
-
+        */
         if (info != NULL)
         {
             while (true)
             {
                 ULONG nextEntryCur = *(ULONG *)((PUCHAR)info + nextEntryRva);
-                PWCHAR fileName = *(PWCHAR*)((PUCHAR)info + fileNameRva);
+                PWCHAR fileName = (PWCHAR)((PUCHAR)info + fileNameRva);
                 ULONG fileNameLength = *(ULONG*)((PUCHAR)info + fileNameLengthRva);
-                // DebugMessage("Cur Addr: 0x%p, NextEntryOffset: 0x%x", &info, nextEntry);
+                // DebugMessage("Cur Addr: 0x%p, NextEntryOffset: 0x%x", info, nextEntryCur);
+                // DebugMessage("fileName: 0x%p, fileNameLength: 0x%x", fileName, fileNameLength);
 
                 debug::PrintWstring(fileName, fileNameLength);
-
+                /*
                 if (fileNameLength <= MAX_SIZE)
                 {
                     RtlCopyMemory(fileNameStr, fileName, fileNameLength);
@@ -276,8 +274,8 @@ namespace filter
                     }
 
                 }
-
-                if (nextEntryOffset == NULL)
+                */
+                if (nextEntryCur == NULL)
                 {
                     break;
                 }
