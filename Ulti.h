@@ -16,6 +16,8 @@ namespace ulti
     BOOLEAN CheckSubstring(PWCHAR string, PWCHAR sub_string);
 
     void SetUlongAt(long long addr, ULONG value);
+
+    ULONG GetUlongAt(long long addr);
 }
 
 

@@ -261,12 +261,16 @@ namespace filter
                         {
                             if (info->NextEntryOffset != 0)
                             {
-                                ulti::SetUlongAt((long long)prev_info + nextEntryRva, (ULONG *)(info + nextEntryRva))
+                                ulti::SetUlongAt((long long)prev_info + nextEntryRva, ulti::GetUlongAt((long long)info + nextEntryRva));
                             }
                             else
                             {
                                 ulti::SetUlongAt((long long)prev_info + nextEntryRva, 0);
                             }
+                        }
+                        else
+                        {
+                            if ()
                         }
                     }
 

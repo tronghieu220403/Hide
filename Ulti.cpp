@@ -73,5 +73,10 @@ BOOLEAN ulti::CheckSubstring(
 
 void ulti::SetUlongAt(long long addr, ULONG value);
 {
-    (ULONG *)(addr) = value;
+    *(ULONG *)addr = value;
+}
+
+ULONG ulti::GetUlongAt(long long addr)
+{
+    return *(ULONG *)addr;
 }
