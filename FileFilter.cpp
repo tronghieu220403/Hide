@@ -185,98 +185,31 @@ namespace filter
 
             switch (info_class)
             {
-            case FileFullDirectoryInformation:
-                HideFile((PUCHAR)directory_buffer,
-                    (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
-                    (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileName),
-                    (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileNameLength)
-                );
-                break;
-            case FileBothDirectoryInformation:
-                HideFile((PUCHAR)directory_buffer,
-                    (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
-                    (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->FileName),
-                    (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->FileNameLength)
-                );
-                break;
-            case FileIdBothDirectoryInformation:
-                HideFile((PUCHAR)directory_buffer,
-                    (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
-                    (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->FileName),
-                    (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->FileNameLength)
-                );
-                break;
-
-            default:
-                break;
-            }
-            /*
-            if (info_class == FileFullDirectoryInformation)
-            {
-                if (mdl_address != NULL)
-                {
-                    p_file_full_dir_info = (PFILE_FULL_DIR_INFORMATION)mdl_address;
-                }
-                else
-                {
-                    p_file_full_dir_info = (PFILE_FULL_DIR_INFORMATION)directory_buffer;
-                }
-                if (p_file_full_dir_info != NULL)
-                {
-                    DebugMessage("NextEntryOffset: %u", p_file_full_dir_info->NextEntryOffset);
-                    debug::PrintWstring(p_file_full_dir_info->FileName, p_file_full_dir_info->FileNameLength);
-                }
-            }
-
-            if (info_class == FileBothDirectoryInformation)
-            {
-                if (mdl_address != NULL)
-                {
-                    p_file_both_dir_info = (PFILE_BOTH_DIR_INFORMATION)mdl_address;
-                }
-                else
-                {
-                    p_file_both_dir_info = (PFILE_BOTH_DIR_INFORMATION)directory_buffer;
-                }
-                if (p_file_both_dir_info != NULL)
-                {
-                    DebugMessage("NextEntryOffset: %u", p_file_both_dir_info->NextEntryOffset);
-                    debug::PrintWstring(p_file_both_dir_info->FileName, p_file_both_dir_info->FileNameLength);
-                }
+                case FileFullDirectoryInformation:
+                    HideFile((PUCHAR)directory_buffer,
+                        (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
+                        (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileName),
+                        (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileNameLength)
+                    );
+                    break;
+                case FileBothDirectoryInformation:
+                    HideFile((PUCHAR)directory_buffer,
+                        (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
+                        (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->FileName),
+                        (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->FileNameLength)
+                    );
+                    break;
+                case FileIdBothDirectoryInformation:
+                    HideFile((PUCHAR)directory_buffer,
+                        (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
+                        (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->FileName),
+                        (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->FileNameLength)
+                    );
+                    break;
+                default:
+                    break;
             }
             
-            if (info_class == FileIdBothDirectoryInformation)
-            {
-                if (mdl_address != NULL)
-                {
-                    p_file_id_both_dir_info = (PFILE_ID_BOTH_DIR_INFORMATION)mdl_address;
-                }
-                else
-                {
-                    p_file_id_both_dir_info = (PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer;
-                }
-                if (p_file_id_both_dir_info != NULL)
-                {
-                    DebugMessage("Print file");
-                    while(true)
-                    {
-                        DebugMessage("Cur Addr: 0x%p, NextEntryOffset: 0x%x", p_file_id_both_dir_info, p_file_id_both_dir_info->NextEntryOffset);
-
-                        debug::PrintWstring(p_file_id_both_dir_info->FileName, p_file_id_both_dir_info->FileNameLength);
-
-                        if (p_file_id_both_dir_info->NextEntryOffset == NULL)
-                        {
-                            break;
-                        }
-                        else
-                        {
-                            p_file_id_both_dir_info = (PFILE_ID_BOTH_DIR_INFORMATION)((PUCHAR)p_file_id_both_dir_info + p_file_id_both_dir_info->NextEntryOffset);
-                        }
-                    }
-                    DebugMessage("End print file");
-                }
-            }
-            */
             if ((data->Iopb->OperationFlags & SL_RESTART_SCAN) > 0)
             {
                 DebugMessage("SL_RESTART_SCAN");
