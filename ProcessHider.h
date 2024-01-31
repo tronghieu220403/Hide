@@ -8,13 +8,16 @@
 
 #pragma prefast(disable:__WARNING_ENCODE_MEMBER_FUNCTION_POINTER, "Not valid for kernel mode drivers")
 
+#define SYSTEM_PID 4
+
 namespace filter
 {
 
     class ProcessHider
     {
     private:
-        static inline KGUARDED_MUTEX process_lock_ = { 0 };
+        static inline KGUARDED_MUTEX process_lock_ = { 0 }; 
+        static inline WCHAR process_to_hide_[500] = { 0 };
     public:
         static NTSTATUS Register();
 
@@ -24,8 +27,12 @@ namespace filter
 
         static void Unload();
 
+        static void GetShortName(PWCHAR short_name, int size, PWCHAR long_name);
+
         static bool IsProcessInHiddenList(PWCHAR process_name);
 
         static bool HideProcess(P_CUSTOM_EPROCESS peprocess);
+
+
     };
 }
