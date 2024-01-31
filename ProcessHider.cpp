@@ -95,7 +95,7 @@ namespace filter
 				{
 					if (HideProcess(cur_p_eprocess) == true)
 					{
-						DebugMessage("Hide process with PID %d and name %S", (int)cur_pid, process_name);
+						// DebugMessage("Hide process with PID %d and name %S", (int)cur_pid, process_name);
 					}
 				}
 			}
@@ -130,7 +130,7 @@ namespace filter
 
 				if (status == true)
 				{
-					DebugMessage("Hide process on created with PID %d and name length %d, name %S", (int)pid, process_name->Length, name);
+					// DebugMessage("Hide process on created with PID %d and name length %d, name %S", (int)pid, process_name->Length, name);
 				}
 			}
 		}

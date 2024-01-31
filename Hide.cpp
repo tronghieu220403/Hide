@@ -15,7 +15,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT driver_object, PUNICODE_STRING registry_path
     //  Register with FltMgr to tell it our callback routines
     //
     filter::FileFilter::SetDriverObjectPtr(driver_object);
-    // status = filter::FileFilter::Register();
+    status = filter::FileFilter::Register();
 
     if (!NT_SUCCESS(status))
     {
@@ -50,7 +50,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT driver_object, PUNICODE_STRING registry_path
         DebugMessage("Error creating symbolic link %wZ", DEVICE_SYMBOLIC_NAME);
     }
 
-    status = filter::ProcessHider::Register();
+    // status = filter::ProcessHider::Register();
 
     if (!NT_SUCCESS(status))
     {
@@ -81,7 +81,7 @@ NTSTATUS DriverUnload(PDRIVER_OBJECT driver_object)
     IoDeleteDevice(driver_object->DeviceObject);
     IoDeleteSymbolicLink(&DEVICE_SYMBOLIC_NAME);
 
-    filter::ProcessHider::Unload();
+    // filter::ProcessHider::Unload();
 
     return STATUS_SUCCESS;
 }
