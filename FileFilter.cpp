@@ -328,7 +328,7 @@ namespace filter
 
     NTSTATUS FileFilter::Unload()
     {
-        // DebugMessage("FileFilter Unload: Entered");
+        DebugMessage("FileFilter Unload: Entered");
         if (g_filter_handle_ != NULL)
         {
             FltUnregisterFilter(g_filter_handle_);

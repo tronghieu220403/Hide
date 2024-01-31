@@ -23,7 +23,7 @@ namespace filter
     {
     private:
         // inline static WCHAR file_to_hide_[500] = { 0 };
-        inline static PWCHAR file_to_hide_ = (PWCHAR)"ggez.txt";
+        inline static PWCHAR file_to_hide_ = (PWCHAR)L"ggez.txt";
         inline static PDRIVER_OBJECT p_driver_object_ = { 0 };
         inline static PFLT_FILTER g_filter_handle_ = { 0 };
         static const FLT_OPERATION_REGISTRATION callbacks_[]; //  operation registration
