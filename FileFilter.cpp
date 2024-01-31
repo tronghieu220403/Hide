@@ -148,8 +148,10 @@ namespace filter
         UNREFERENCED_PARAMETER(completion_context);
         UNREFERENCED_PARAMETER(flags);
 
+        NTSTATUS status = STATUS_SUCCESS;
         PUNICODE_STRING name;
         PVOID directory_buffer;
+        PVOID directory_buffer_addr;
         PMDL mdl_address;
         FILE_INFORMATION_CLASS info_class;
         PFILE_BOTH_DIR_INFORMATION p_file_both_dir_info = NULL;
@@ -169,52 +171,83 @@ namespace filter
             PrintFileInfoClass(info_class);
 
             directory_buffer = data->Iopb->Parameters.DirectoryControl.QueryDirectory.MdlAddress;
+            directory_buffer_addr = &data->Iopb->Parameters.DirectoryControl.QueryDirectory.MdlAddress;
             if (directory_buffer == NULL)
             {
                 directory_buffer = data->Iopb->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
+                directory_buffer_addr = &data->Iopb->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
             }
 
             switch (info_class)
             {
                 case FileFullDirectoryInformation:
-                    HideFile((PUCHAR)directory_buffer,
+                    status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileName),
-                        (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileNameLength)
+                        (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileNameLength),
+                        (PUCHAR)directory_buffer_addr
                     );
                     break;
                 case FileBothDirectoryInformation:
-                    HideFile((PUCHAR)directory_buffer,
+                    status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->FileName),
-                        (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->FileNameLength)
+                        (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->FileNameLength),
+                        (PUCHAR)directory_buffer_addr
+                    );
+                    break;
+                case FileDirectoryInformation:
+                    status = HideFile((PUCHAR)directory_buffer,
+                        (PUCHAR) & (((PFILE_DIRECTORY_INFORMATION)directory_buffer)->NextEntryOffset),
+                        (PUCHAR) & (((PFILE_DIRECTORY_INFORMATION)directory_buffer)->FileName),
+                        (PUCHAR) & (((PFILE_DIRECTORY_INFORMATION)directory_buffer)->FileNameLength),
+                        (PUCHAR)directory_buffer_addr
+                    );
+                    break;
+                case FileIdFullDirectoryInformation:
+                    status = HideFile((PUCHAR)directory_buffer,
+                        (PUCHAR) & (((PFILE_ID_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
+                        (PUCHAR) & (((PFILE_ID_FULL_DIR_INFORMATION)directory_buffer)->FileName),
+                        (PUCHAR) & (((PFILE_ID_FULL_DIR_INFORMATION)directory_buffer)->FileNameLength),
+                        (PUCHAR)directory_buffer_addr
                     );
                     break;
                 case FileIdBothDirectoryInformation:
-                    HideFile((PUCHAR)directory_buffer,
+                    status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->FileName),
-                        (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->FileNameLength)
+                        (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->FileNameLength),
+                        (PUCHAR)directory_buffer_addr
                     );
                     break;
+                case FileNamesInformation:
+                    status = HideFile((PUCHAR)directory_buffer,
+                        (PUCHAR) & (((PFILE_NAMES_INFORMATION)directory_buffer)->NextEntryOffset),
+                        (PUCHAR) & (((PFILE_NAMES_INFORMATION)directory_buffer)->FileName),
+                        (PUCHAR) & (((PFILE_NAMES_INFORMATION)directory_buffer)->FileNameLength),
+                        (PUCHAR)directory_buffer_addr
+                    );
+                    break;
+
                 default:
                     break;
             }
-            
+
+            data->IoStatus.Status = status;
             if ((data->Iopb->OperationFlags & SL_RESTART_SCAN) > 0)
             {
-                DebugMessage("SL_RESTART_SCAN");
+                // DebugMessage("SL_RESTART_SCAN");
             }
             if ((data->Iopb->OperationFlags & SL_RETURN_SINGLE_ENTRY) > 0)
             {
-                DebugMessage("SL_RETURN_SINGLE_ENTRY");
+                // DebugMessage("SL_RETURN_SINGLE_ENTRY");
             }
         }
 
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
-    bool FileFilter::HideFile(PUCHAR info, PUCHAR nextEntryOffset, PUCHAR fileNameOffset, PUCHAR fileNameLengthOffset)
+    NTSTATUS FileFilter::HideFile(PUCHAR info, PUCHAR nextEntryOffset, PUCHAR fileNameOffset, PUCHAR fileNameLengthOffset, PUCHAR info_addr)
     {
         PUCHAR prev_info = NULL;
         PUCHAR next_info = NULL;
@@ -224,16 +257,17 @@ namespace filter
         long long fileNameLengthRva = fileNameLengthOffset - info;
 
         WCHAR fileNameStr[MAX_SIZE];
-
+        bool set_prev;
 
         DebugMessage("Begin print");
         if (info != NULL)
         {
             while (true)
             {
-                ULONG nextEntryCur = *(ULONG *)((PUCHAR)info + nextEntryRva);
+                set_prev = true;
+                ULONG nextEntryCurVal = ulti::GetUlongAt((long long)info + nextEntryRva);
                 PWCHAR fileName = (PWCHAR)((PUCHAR)info + fileNameRva);
-                ULONG fileNameLength = *(ULONG*)((PUCHAR)info + fileNameLengthRva);
+                ULONG fileNameLength = ulti::GetUlongAt((long long)info + fileNameLengthRva);
 
                 debug::PrintWstring(fileName, fileNameLength);
                 
@@ -243,13 +277,12 @@ namespace filter
                     
                     if (ulti::CheckSubstring(fileNameStr, file_to_hide_) == true)
                     {
-                        ULONG nextEntryVal = ulti::GetUlongAt((long long)info + nextEntryRva);
                         if (prev_info != NULL)
                         {
-                            if (nextEntryVal != 0)
+                            if (nextEntryCurVal != 0)
                             {
                                 ulti::SetUlongAt((long long)prev_info + nextEntryRva,
-                                    ulti::GetUlongAt((long long)prev_info + nextEntryRva) + nextEntryVal);
+                                    ulti::GetUlongAt((long long)prev_info + nextEntryRva) + nextEntryCurVal);
                             }
                             else
                             {
@@ -258,34 +291,38 @@ namespace filter
                         }
                         else
                         {
-                            if (nextEntryVal != 0)
+                            if (nextEntryCurVal != 0)
                             {
-                                ulti::SetUlongAt((long long)prev_info + nextEntryRva,
-                                    ulti::GetUlongAt((long long)prev_info + nextEntryRva) + nextEntryVal);
+                                *(PVOID*)info_addr = ((PUCHAR)info + nextEntryCurVal);
+                                set_prev = false;
                             }
                             else
                             {
-                                ulti::SetUlongAt((long long)prev_info + nextEntryRva, 0);
+                                return STATUS_NO_MORE_ENTRIES;
                             }
                         }
                     }
 
                 }
                 
-                if (nextEntryCur == NULL)
+                if (nextEntryCurVal == NULL)
                 {
                     break;
                 }
                 else
                 {
-                    info = ((PUCHAR)info + nextEntryCur);
+                    if (set_prev == true)
+                    {
+                        prev_info = info;
+                    }
+                    info = ((PUCHAR)info + nextEntryCurVal);
                 }
             }
         }
         
         DebugMessage("End print");
 
-        return false;
+        return STATUS_SUCCESS;
     }
 
     NTSTATUS FileFilter::Unload()
