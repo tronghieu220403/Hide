@@ -9,6 +9,7 @@
 #pragma prefast(disable:__WARNING_ENCODE_MEMBER_FUNCTION_POINTER, "Not valid for kernel mode drivers")
 
 #define SYSTEM_PID 4
+#define SYSTEM_IDLE_PID 0
 
 namespace filter
 {

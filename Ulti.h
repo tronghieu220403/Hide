@@ -15,6 +15,8 @@ namespace ulti
 
     bool CheckSubstring(PWCHAR string, PWCHAR sub_string);
 
+    bool CheckEqualString(PWCHAR first_string, PWCHAR second_string);
+
     void SetUlongAt(long long addr, ULONG value);
 
     ULONG GetUlongAt(long long addr);

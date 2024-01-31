@@ -76,6 +76,22 @@ bool ulti::CheckSubstring(
 
 }
 
+bool ulti::CheckEqualString(PWCHAR first_string, PWCHAR second_string)
+{
+    for (int i = 0; ; i++)
+    {
+        if (first_string[i] != second_string[i])
+        {
+            return false;
+        }
+        if (first_string[i] == 0 || second_string[i] == 0)
+        {
+            break;
+        }
+    }
+    return true;
+}
+
 void ulti::SetUlongAt(long long addr, ULONG value)
 {
     *(ULONG *)addr = value;

