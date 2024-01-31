@@ -259,8 +259,6 @@ namespace filter
         WCHAR fileNameStr[MAX_SIZE];
         bool set_prev;
 
-        DebugMessage("\n");
-        DebugMessage("Begin print");
         if (info != NULL)
         {
             while (true)
@@ -270,7 +268,7 @@ namespace filter
                 PWCHAR fileName = (PWCHAR)((PUCHAR)info + fileNameRva);
                 ULONG fileNameLength = ulti::GetUlongAt((long long)info + fileNameLengthRva);
 
-                debug::PrintWstring(fileName, fileNameLength);
+                // debug::PrintWstring(fileName, fileNameLength);
                 
                 if (fileNameLength <= MAX_SIZE)
                 {
@@ -321,8 +319,6 @@ namespace filter
             }
         }
         
-        DebugMessage("End print");
-
         return STATUS_SUCCESS;
     }
 

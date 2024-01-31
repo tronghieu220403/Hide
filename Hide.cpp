@@ -24,11 +24,11 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT driver_object, PUNICODE_STRING registry_path
         return STATUS_UNSUCCESSFUL;
     }
 
-    //status = filter::ProcessHider::Register();
+    status = filter::ProcessHider::Register();
 
     if (!NT_SUCCESS(status))
     {
-        // DebugMessage("ProcessFilter: Register not successfull\n");
+        DebugMessage("ProcessFilter: Register not successfull\n");
         return STATUS_UNSUCCESSFUL;
     }
 
@@ -49,7 +49,7 @@ NTSTATUS FilterUnload(FLT_FILTER_UNLOAD_FLAGS flags)
 NTSTATUS DriverUnload(PDRIVER_OBJECT driver_object)
 {
     UNREFERENCED_PARAMETER(driver_object);
-    // filter::ProcessHider::Unload();
+    filter::ProcessHider::Unload();
 
     return STATUS_SUCCESS;
 }
