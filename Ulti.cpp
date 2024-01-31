@@ -1,5 +1,28 @@
 #include "Ulti.h"
 
+bool ulti::GetNameWithoutDirectory(PWCHAR short_name, int size, PUNICODE_STRING long_name)
+{
+    int long_name_size = long_name->Length / 2;
+    int ans = -1;
+    for (int i = long_name_size - 1; i >= 0; i--)
+    {
+        if (long_name->Buffer[i] == WCHAR(L'\\'))
+        {
+            ans = i;
+            break;
+        }
+    }
+
+    int mem_size = (long_name_size - (ans + 1)) * 2;
+    if (mem_size >= size)
+    {
+        return false;
+    }
+    RtlCopyMemory(short_name, &long_name->Buffer[ans + 1], mem_size);
+    short_name[mem_size + 1] = 0;
+    return true;
+}
+
 int ulti::MergeString(PWCHAR des, int size , PWCHAR src1, PWCHAR src2)
 {
 	int size1 = GetWstringSize(src1);

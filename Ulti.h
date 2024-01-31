@@ -9,6 +9,8 @@
 
 namespace ulti
 {
+    bool GetNameWithoutDirectory(PWCHAR short_name, int size, PUNICODE_STRING long_name);
+
 	int MergeString(PWCHAR des, int size, PWCHAR src1, PWCHAR src2);
 	
 	int GetWstringSize(PWCHAR str);

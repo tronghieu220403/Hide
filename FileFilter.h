@@ -50,7 +50,7 @@ namespace filter
 
         static NTSTATUS Unload();
 
-        static bool IsMyFolder(PFLT_CALLBACK_DATA data, PWCHAR my_folder);
+        // static bool IsMyFolder(PFLT_CALLBACK_DATA data, PWCHAR my_folder);
         static void GetFileName(PFLT_CALLBACK_DATA data, PWCHAR name, int size);
         static void PrintCurFileName(PFLT_CALLBACK_DATA data);
 

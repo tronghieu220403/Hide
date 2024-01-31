@@ -158,10 +158,12 @@ namespace filter
         PFILE_FULL_DIR_INFORMATION p_file_full_dir_info = NULL;
         PFILE_ID_BOTH_DIR_INFORMATION p_file_id_both_dir_info = NULL;
 
+        /*
         if (IsMyFolder(data, (PWCHAR)L"Hide") == false)
         {
             return FLT_POSTOP_FINISHED_PROCESSING;
         }
+        */
 
         if (data->Iopb->MinorFunction == IRP_MN_QUERY_DIRECTORY)
         {
@@ -252,11 +254,11 @@ namespace filter
         PUCHAR prev_info = NULL;
         PUCHAR next_info = NULL;
 
-        long long nextEntryRva = nextEntryOffset - info;
-        long long fileNameRva = fileNameOffset - info;
-        long long fileNameLengthRva = fileNameLengthOffset - info;
+        long long next_entry_rva = nextEntryOffset - info;
+        long long file_name_rva = fileNameOffset - info;
+        long long file_name_length_rva = fileNameLengthOffset - info;
 
-        WCHAR fileNameStr[MAX_SIZE];
+        WCHAR file_name_str[MAX_SIZE + 1];
         bool set_prev;
 
         if (info != NULL)
@@ -264,35 +266,35 @@ namespace filter
             while (true)
             {
                 set_prev = true;
-                ULONG nextEntryCurVal = ulti::GetUlongAt((long long)info + nextEntryRva);
-                PWCHAR fileName = (PWCHAR)((PUCHAR)info + fileNameRva);
-                ULONG fileNameLength = ulti::GetUlongAt((long long)info + fileNameLengthRva);
+                ULONG next_entry_cur_val = ulti::GetUlongAt((long long)info + next_entry_rva);
+                PWCHAR file_name = (PWCHAR)((PUCHAR)info + file_name_rva);
+                ULONG file_name_length = ulti::GetUlongAt((long long)info + file_name_length_rva);
 
-                // debug::PrintWstring(fileName, fileNameLength);
+                // debug::PrintWstring(file_name, file_name_length);
                 
-                if (fileNameLength <= MAX_SIZE)
+                UNICODE_STRING long_file_name = { (USHORT)file_name_length , (USHORT)file_name_length , file_name };
+
+                if (file_name_length <= MAX_SIZE && ulti::GetNameWithoutDirectory(file_name_str, MAX_SIZE + 1, &long_file_name) == true)
                 {
-                    RtlCopyMemory(fileNameStr, fileName, fileNameLength);
-                    
-                    if (ulti::CheckSubstring(fileNameStr, file_to_hide_) == true)
+                    if (ulti::CheckEqualString(file_name_str, file_to_hide_) == true)
                     {
                         if (prev_info != NULL)
                         {
-                            if (nextEntryCurVal != 0)
+                            if (next_entry_cur_val != 0)
                             {
-                                ulti::SetUlongAt((long long)prev_info + nextEntryRva,
-                                    ulti::GetUlongAt((long long)prev_info + nextEntryRva) + nextEntryCurVal);
+                                ulti::SetUlongAt((long long)prev_info + next_entry_rva,
+                                    ulti::GetUlongAt((long long)prev_info + next_entry_rva) + next_entry_cur_val);
                             }
                             else
                             {
-                                ulti::SetUlongAt((long long)prev_info + nextEntryRva, 0);
+                                ulti::SetUlongAt((long long)prev_info + next_entry_rva, 0);
                             }
                         }
                         else
                         {
-                            if (nextEntryCurVal != 0)
+                            if (next_entry_cur_val != 0)
                             {
-                                *(PVOID*)info_addr = ((PUCHAR)info + nextEntryCurVal);
+                                *(PVOID*)info_addr = ((PUCHAR)info + next_entry_cur_val);
                                 set_prev = false;
                             }
                             else
@@ -301,10 +303,9 @@ namespace filter
                             }
                         }
                     }
-
                 }
                 
-                if (nextEntryCurVal == NULL)
+                if (next_entry_cur_val == NULL)
                 {
                     break;
                 }
@@ -314,7 +315,7 @@ namespace filter
                     {
                         prev_info = info;
                     }
-                    info = ((PUCHAR)info + nextEntryCurVal);
+                    info = ((PUCHAR)info + next_entry_cur_val);
                 }
             }
         }
@@ -333,7 +334,7 @@ namespace filter
         return STATUS_SUCCESS;
     }
 
-
+    /*
     bool FileFilter::IsMyFolder(PFLT_CALLBACK_DATA data, PWCHAR my_folder)
     {
         WCHAR name[MAX_SIZE] = { 0 };
@@ -349,6 +350,7 @@ namespace filter
         return true;
 
     }
+    */
 
 
     void FileFilter::GetFileName(PFLT_CALLBACK_DATA data, PWCHAR name, int size)
