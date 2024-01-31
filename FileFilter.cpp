@@ -236,25 +236,42 @@ namespace filter
                 ULONG fileNameLength = *(ULONG*)((PUCHAR)info + fileNameLengthRva);
 
                 debug::PrintWstring(fileName, fileNameLength);
-                /*
+                
                 if (fileNameLength <= MAX_SIZE)
                 {
                     RtlCopyMemory(fileNameStr, fileName, fileNameLength);
                     
                     if (ulti::CheckSubstring(fileNameStr, file_to_hide_) == true)
                     {
+                        ULONG nextEntryVal = ulti::GetUlongAt((long long)info + nextEntryRva);
                         if (prev_info != NULL)
                         {
-                            ulti::SetUlongAt((long long)prev_info + nextEntryRva, ulti::GetUlongAt((long long)info + nextEntryRva));
+                            if (nextEntryVal != 0)
+                            {
+                                ulti::SetUlongAt((long long)prev_info + nextEntryRva,
+                                    ulti::GetUlongAt((long long)prev_info + nextEntryRva) + nextEntryVal);
+                            }
+                            else
+                            {
+                                ulti::SetUlongAt((long long)prev_info + nextEntryRva, 0);
+                            }
                         }
                         else
                         {
-                            
+                            if (nextEntryVal != 0)
+                            {
+                                ulti::SetUlongAt((long long)prev_info + nextEntryRva,
+                                    ulti::GetUlongAt((long long)prev_info + nextEntryRva) + nextEntryVal);
+                            }
+                            else
+                            {
+                                ulti::SetUlongAt((long long)prev_info + nextEntryRva, 0);
+                            }
                         }
                     }
 
                 }
-                */
+                
                 if (nextEntryCur == NULL)
                 {
                     break;
