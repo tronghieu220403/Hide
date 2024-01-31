@@ -168,7 +168,7 @@ namespace filter
             name = data->Iopb->Parameters.DirectoryControl.QueryDirectory.FileName;
 
             info_class = data->Iopb->Parameters.DirectoryControl.QueryDirectory.FileInformationClass;
-            PrintFileInfoClass(info_class);
+            // PrintFileInfoClass(info_class);
 
             directory_buffer = data->Iopb->Parameters.DirectoryControl.QueryDirectory.MdlAddress;
             directory_buffer_addr = &data->Iopb->Parameters.DirectoryControl.QueryDirectory.MdlAddress;
@@ -259,6 +259,7 @@ namespace filter
         WCHAR fileNameStr[MAX_SIZE];
         bool set_prev;
 
+        DebugMessage("\n");
         DebugMessage("Begin print");
         if (info != NULL)
         {
