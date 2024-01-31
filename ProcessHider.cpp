@@ -60,11 +60,14 @@ namespace filter
 		PLIST_ENTRY next_p_list_entry_eprocess;
 
 		P_CUSTOM_EPROCESS cur_p_eprocess = NULL, next_p_eprocess = NULL;
+
 		if (PsLookupProcessByProcessId((HANDLE)SYSTEM_PID, (PEPROCESS *)&cur_p_eprocess) != STATUS_SUCCESS)
 		{
 			return;
 		}
+
 		last_pid = SYSTEM_PID;
+
 		while (true)
 		{
 			HANDLE cur_pid = cur_p_eprocess->UniqueProcesId;
@@ -85,7 +88,7 @@ namespace filter
 					if (HideProcess(cur_p_eprocess) == true)
 					{
 						// Do something
-						DebugMessage("Process created with PID %d and name %S", (int)cur_pid, process_name);
+						DebugMessage("Hide process with PID %d and name %S", (int)cur_pid, process_name);
 					}
 				}
 			}
@@ -111,7 +114,6 @@ namespace filter
 				return;
 			}
 
-			DebugMessage("Process created with PID %d and name length %d, name %S", (int)pid, process_name->Length, name);
 
 			if (IsProcessInHiddenList(name))
 			{
@@ -121,7 +123,7 @@ namespace filter
 
 				if (status == true)
 				{
-					DebugMessage("Hide oke");
+					DebugMessage("Hide process on created with PID %d and name length %d, name %S", (int)pid, process_name->Length, name);
 				}
 			}
 		}
