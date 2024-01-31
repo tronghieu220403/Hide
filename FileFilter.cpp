@@ -179,17 +179,22 @@ namespace filter
                 directory_buffer = data->Iopb->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
                 directory_buffer_addr = &data->Iopb->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
             }
-
+            ULONG next_entry;
             switch (info_class)
             {
                 case FileFullDirectoryInformation:
+                    next_entry = ((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset;
+                    // DebugMessage("%lu", next_entry);
+                    /*
                     status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileName),
                         (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileNameLength),
                         (PUCHAR)directory_buffer_addr
                     );
+                    */
                     break;
+                /*
                 case FileBothDirectoryInformation:
                     status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
@@ -230,7 +235,7 @@ namespace filter
                         (PUCHAR)directory_buffer_addr
                     );
                     break;
-
+                */
                 default:
                     break;
             }

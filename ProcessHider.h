@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fltKernel.h>
+#include <ntddk.h>
 #include <dontuse.h>
 
 #include "Debug.h"
@@ -11,12 +12,16 @@
 #define SYSTEM_PID 4
 #define SYSTEM_IDLE_PID 0
 
+typedef PCHAR (*GET_PROCESS_IMAGE_NAME) (PEPROCESS Process);
+
+
 namespace filter
 {
 
     class ProcessHider
     {
     private:
+		static inline GET_PROCESS_IMAGE_NAME gGetProcessImageFileName = NULL;
         static inline KGUARDED_MUTEX process_lock_ = { 0 }; 
         // static inline WCHAR process_to_hide_[MAX_SIZE] = { 0 };
         static inline PWCHAR process_to_hide_ = (PWCHAR)L"msedge.exe";

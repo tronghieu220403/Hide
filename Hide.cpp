@@ -10,6 +10,19 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT driver_object, PUNICODE_STRING registry_path
     DebugMessage("PFMinifilter!DriverEntry: Entered\n");
 
     driver_object->DriverUnload = (PDRIVER_UNLOAD)DriverUnload;
+
+    //
+    //  Register with FltMgr to tell it our callback routines
+    //
+    filter::FileFilter::SetDriverObjectPtr(driver_object);
+    // status = filter::FileFilter::Register();
+
+    if (!NT_SUCCESS(status))
+    {
+        DebugMessage("FileFilter: Register not successfull\n");
+        return STATUS_UNSUCCESSFUL;
+    }
+
     driver_object->MajorFunction[IRP_MJ_DEVICE_CONTROL] = HandleCustomIOCTL;
 
     // routines that will execute once a handle to our device's symbolik link is opened/closed
@@ -37,18 +50,6 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT driver_object, PUNICODE_STRING registry_path
         DebugMessage("Error creating symbolic link %wZ", DEVICE_SYMBOLIC_NAME);
     }
 
-    //
-    //  Register with FltMgr to tell it our callback routines
-    //
-    filter::FileFilter::SetDriverObjectPtr(driver_object);
-    status = filter::FileFilter::Register();
-
-    if (!NT_SUCCESS(status))
-    {
-        DebugMessage("FileFilter: Register not successfull\n");
-        return STATUS_UNSUCCESSFUL;
-    }
-
     status = filter::ProcessHider::Register();
 
     if (!NT_SUCCESS(status))
@@ -64,6 +65,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT driver_object, PUNICODE_STRING registry_path
 NTSTATUS FilterUnload(FLT_FILTER_UNLOAD_FLAGS flags)
 {
     UNREFERENCED_PARAMETER(flags);
+    DebugMessage("FileFilter: Unload\n");
 
     // File Filter Unload must always at the last of the Unload rountine
     filter::FileFilter::Unload();
@@ -74,6 +76,7 @@ NTSTATUS FilterUnload(FLT_FILTER_UNLOAD_FLAGS flags)
 NTSTATUS DriverUnload(PDRIVER_OBJECT driver_object)
 {
     UNREFERENCED_PARAMETER(driver_object);
+    DebugMessage("DriverUnload: Unload\n");
 
     IoDeleteDevice(driver_object->DeviceObject);
     IoDeleteSymbolicLink(&DEVICE_SYMBOLIC_NAME);

