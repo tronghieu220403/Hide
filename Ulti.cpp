@@ -19,7 +19,7 @@ bool ulti::GetNameWithoutDirectory(PWCHAR short_name, int size, PUNICODE_STRING 
         return false;
     }
     RtlCopyMemory(short_name, &long_name->Buffer[ans + 1], mem_size);
-    short_name[mem_size + 1] = 0;
+    short_name[mem_size/2] = 0;
     return true;
 }
 

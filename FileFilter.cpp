@@ -146,7 +146,6 @@ namespace filter
     {
         UNREFERENCED_PARAMETER(flt_objects);
         UNREFERENCED_PARAMETER(completion_context);
-        UNREFERENCED_PARAMETER(flags);
 
         NTSTATUS status = STATUS_SUCCESS;
         PUNICODE_STRING name;
@@ -158,39 +157,64 @@ namespace filter
         PFILE_FULL_DIR_INFORMATION p_file_full_dir_info = NULL;
         PFILE_ID_BOTH_DIR_INFORMATION p_file_id_both_dir_info = NULL;
 
+        PFLT_FILE_NAME_INFORMATION flt_fame;
+
+        // assert we're not draining.
+        ASSERT(!FlagOn(flags, FLTFL_POST_OPERATION_DRAINING));
+        if (flags & FLTFL_POST_OPERATION_DRAINING)
+        {
+            return FLT_POSTOP_FINISHED_PROCESSING;
+        }
+
+        if (!NT_SUCCESS(data->IoStatus.Status))
+            return FLT_POSTOP_FINISHED_PROCESSING;
+
+
+        status = FltGetFileNameInformation(data, FLT_FILE_NAME_NORMALIZED, &flt_fame);
+        if (!NT_SUCCESS(status))
+        {
+            return FLT_POSTOP_FINISHED_PROCESSING;
+        }
+
+
         /*
         if (IsMyFolder(data, (PWCHAR)L"Hide") == false)
         {
             return FLT_POSTOP_FINISHED_PROCESSING;
         }
         */
-
-        if (data->Iopb->MinorFunction == IRP_MN_QUERY_DIRECTORY)
+        // return FLT_POSTOP_FINISHED_PROCESSING;
+        __try
         {
-            name = data->Iopb->Parameters.DirectoryControl.QueryDirectory.FileName;
-
-            info_class = data->Iopb->Parameters.DirectoryControl.QueryDirectory.FileInformationClass;
-            // PrintFileInfoClass(info_class);
-
-            directory_buffer = data->Iopb->Parameters.DirectoryControl.QueryDirectory.MdlAddress;
-            directory_buffer_addr = &data->Iopb->Parameters.DirectoryControl.QueryDirectory.MdlAddress;
-            if (directory_buffer == NULL)
+            if (data->Iopb->MinorFunction == IRP_MN_QUERY_DIRECTORY)
             {
-                directory_buffer = data->Iopb->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
-                directory_buffer_addr = &data->Iopb->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
-            }
-            ULONG next_entry;
-            switch (info_class)
-            {
+                name = data->Iopb->Parameters.DirectoryControl.QueryDirectory.FileName;
+
+                info_class = data->Iopb->Parameters.DirectoryControl.QueryDirectory.FileInformationClass;
+                // PrintFileInfoClass(info_class);
+
+                directory_buffer = data->Iopb->Parameters.DirectoryControl.QueryDirectory.MdlAddress;
+                directory_buffer_addr = &data->Iopb->Parameters.DirectoryControl.QueryDirectory.MdlAddress;
+                if (directory_buffer == NULL)
+                {
+                    directory_buffer = data->Iopb->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
+                    directory_buffer_addr = &data->Iopb->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
+                }
+                ULONG next_entry_cur_val;
+                switch (info_class)
+                {
                 case FileFullDirectoryInformation:
+                    next_entry_cur_val = ulti::GetUlongAt((long long)(&(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset)));
                     status = HideFile((PUCHAR)directory_buffer,
-                        (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
-                        (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileName),
-                        (PUCHAR) &(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileNameLength),
+                        (PUCHAR) & (((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
+                        (PUCHAR) & (((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileName),
+                        (PUCHAR) & (((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileNameLength),
                         (PUCHAR)directory_buffer_addr
                     );
                     break;
                 case FileBothDirectoryInformation:
+                    next_entry_cur_val = ulti::GetUlongAt((long long)(&(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset)));
+
                     status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->FileName),
@@ -199,6 +223,8 @@ namespace filter
                     );
                     break;
                 case FileDirectoryInformation:
+                    next_entry_cur_val = ulti::GetUlongAt((long long)(&(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset)));
+
                     status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) & (((PFILE_DIRECTORY_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) & (((PFILE_DIRECTORY_INFORMATION)directory_buffer)->FileName),
@@ -207,6 +233,8 @@ namespace filter
                     );
                     break;
                 case FileIdFullDirectoryInformation:
+                    next_entry_cur_val = ulti::GetUlongAt((long long)(&(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset)));
+
                     status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) & (((PFILE_ID_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) & (((PFILE_ID_FULL_DIR_INFORMATION)directory_buffer)->FileName),
@@ -215,6 +243,8 @@ namespace filter
                     );
                     break;
                 case FileIdBothDirectoryInformation:
+                    next_entry_cur_val = ulti::GetUlongAt((long long)(&(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset)));
+
                     status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->FileName),
@@ -223,6 +253,8 @@ namespace filter
                     );
                     break;
                 case FileNamesInformation:
+                    next_entry_cur_val = ulti::GetUlongAt((long long)(&(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset)));
+
                     status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) & (((PFILE_NAMES_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) & (((PFILE_NAMES_INFORMATION)directory_buffer)->FileName),
@@ -232,17 +264,21 @@ namespace filter
                     break;
                 default:
                     break;
+                }
+                data->IoStatus.Status = status;
+                if ((data->Iopb->OperationFlags & SL_RESTART_SCAN) > 0)
+                {
+                    // DebugMessage("SL_RESTART_SCAN");
+                }
+                if ((data->Iopb->OperationFlags & SL_RETURN_SINGLE_ENTRY) > 0)
+                {
+                    // DebugMessage("SL_RETURN_SINGLE_ENTRY");
+                }
             }
-
-            data->IoStatus.Status = status;
-            if ((data->Iopb->OperationFlags & SL_RESTART_SCAN) > 0)
-            {
-                // DebugMessage("SL_RESTART_SCAN");
-            }
-            if ((data->Iopb->OperationFlags & SL_RETURN_SINGLE_ENTRY) > 0)
-            {
-                // DebugMessage("SL_RETURN_SINGLE_ENTRY");
-            }
+        }
+        __finally
+        {
+            FltReleaseFileNameInformation(flt_fame);
         }
 
         return FLT_POSTOP_FINISHED_PROCESSING;
@@ -250,6 +286,7 @@ namespace filter
 
     NTSTATUS FileFilter::HideFile(PUCHAR info, PUCHAR nextEntryOffset, PUCHAR fileNameOffset, PUCHAR fileNameLengthOffset, PUCHAR info_addr)
     {
+
         PUCHAR prev_info = NULL;
         PUCHAR next_info = NULL;
 
@@ -265,7 +302,7 @@ namespace filter
             while (true)
             {
                 set_prev = true;
-                ULONG next_entry_cur_val = ulti::GetUlongAt((long long)info + next_entry_rva);
+                ULONG cur_next_entry_val = ulti::GetUlongAt((long long)info + next_entry_rva);
                 PWCHAR file_name = (PWCHAR)((PUCHAR)info + file_name_rva);
                 ULONG file_name_length = ulti::GetUlongAt((long long)info + file_name_length_rva);
 
@@ -275,14 +312,17 @@ namespace filter
 
                 if (file_name_length <= MAX_SIZE && ulti::GetNameWithoutDirectory(file_name_str, MAX_SIZE + 1, &long_file_name) == true)
                 {
+                    // DebugMessage("%S", file_name_str);
+                    /*
                     if (ulti::CheckEqualString(file_name_str, file_to_hide_) == true)
                     {
+                        DebugMessage("%S", file_name_str);
                         if (prev_info != NULL)
                         {
-                            if (next_entry_cur_val != 0)
+                            if (cur_next_entry_val != 0)
                             {
                                 ulti::SetUlongAt((long long)prev_info + next_entry_rva,
-                                    ulti::GetUlongAt((long long)prev_info + next_entry_rva) + next_entry_cur_val);
+                                    ulti::GetUlongAt((long long)prev_info + next_entry_rva) + cur_next_entry_val);
                             }
                             else
                             {
@@ -291,9 +331,9 @@ namespace filter
                         }
                         else
                         {
-                            if (next_entry_cur_val != 0)
+                            if (cur_next_entry_val != 0)
                             {
-                                *(PVOID*)info_addr = ((PUCHAR)info + next_entry_cur_val);
+                                *(PVOID*)info_addr = ((PUCHAR)info + cur_next_entry_val);
                                 set_prev = false;
                             }
                             else
@@ -302,9 +342,10 @@ namespace filter
                             }
                         }
                     }
+                    */
                 }
-                
-                if (next_entry_cur_val == NULL)
+
+                if (cur_next_entry_val == NULL)
                 {
                     break;
                 }
@@ -314,7 +355,7 @@ namespace filter
                     {
                         prev_info = info;
                     }
-                    info = ((PUCHAR)info + next_entry_cur_val);
+                    info = ((PUCHAR)info + cur_next_entry_val);
                 }
             }
         }
