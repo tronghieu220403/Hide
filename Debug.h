@@ -1,6 +1,6 @@
 #pragma once
 
-#define HIEU_DEBUG
+// #define HIEU_DEBUG
 
 #ifdef HIEU_DEBUG
 
