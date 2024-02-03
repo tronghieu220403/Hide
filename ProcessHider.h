@@ -20,11 +20,12 @@ namespace filter
 
     class ProcessHider
     {
-    private:
+    public:
 		static inline GET_PROCESS_IMAGE_NAME gGetProcessImageFileName = NULL;
         static inline KGUARDED_MUTEX process_lock_ = { 0 }; 
-        // static inline WCHAR process_to_hide_[MAX_SIZE] = { 0 };
-        static inline PWCHAR process_to_hide_ = (PWCHAR)L"msedge.exe";
+        static inline KGUARDED_MUTEX process_name_lock_ = { 0 };
+        static inline WCHAR process_to_hide_[MAX_SIZE] = { 0 };
+        // static inline PWCHAR process_to_hide_ = (PWCHAR)L"msedge.exe";
 
     public:
         static NTSTATUS Register();

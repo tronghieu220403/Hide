@@ -21,9 +21,10 @@ namespace filter
 
     class FileFilter
     {
-    private:
-        // inline static WCHAR file_to_hide_[MAX_SIZE] = { 0 };
-        inline static PWCHAR file_to_hide_ = (PWCHAR)"hide.txt";
+    public:
+        inline static WCHAR file_to_hide_[MAX_SIZE] = { 0 };
+        //inline static PWCHAR file_to_hide_ = (PWCHAR)L"hide.txt";
+        static inline KGUARDED_MUTEX file_name_lock_ = { 0 };
         inline static PDRIVER_OBJECT p_driver_object_ = { 0 };
         inline static PFLT_FILTER g_filter_handle_ = { 0 };
         static const FLT_OPERATION_REGISTRATION callbacks_[]; //  operation registration
@@ -51,7 +52,8 @@ namespace filter
 
         static NTSTATUS Unload();
 
-        // static bool IsMyFolder(PFLT_CALLBACK_DATA data, PWCHAR my_folder);
+        static bool IsFileInHiddenList(PWCHAR file_name);
+
         static void GetFileName(PFLT_CALLBACK_DATA data, PWCHAR name, int size);
         static void PrintCurFileName(PFLT_CALLBACK_DATA data);
 

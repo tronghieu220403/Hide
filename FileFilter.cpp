@@ -6,6 +6,8 @@ namespace filter
     {
         // DebugMessage("FileFilter registering hihi\n");
 
+        KeInitializeGuardedMutex(&file_name_lock_);
+
         NTSTATUS status = FltRegisterFilter(p_driver_object_,
             &filter_registration_,
             &g_filter_handle_);
@@ -15,16 +17,16 @@ namespace filter
             switch (status)
             {
             case STATUS_INSUFFICIENT_RESOURCES:
-                // DebugMessage("STATUS_INSUFFICIENT_RESOURCES\n");
+                DebugMessage("STATUS_INSUFFICIENT_RESOURCES\n");
                 break;
             case STATUS_INVALID_PARAMETER:
-                // DebugMessage("STATUS_INVALID_PARAMETER\n");
+                DebugMessage("STATUS_INVALID_PARAMETER\n");
                 break;
             case STATUS_FLT_NOT_INITIALIZED:
-                // DebugMessage("STATUS_FLT_NOT_INITIALIZED\n");
+                DebugMessage("STATUS_FLT_NOT_INITIALIZED\n");
                 break;
             case STATUS_OBJECT_NAME_NOT_FOUND:
-                // DebugMessage("STATUS_OBJECT_NAME_NOT_FOUND\n");
+                DebugMessage("STATUS_OBJECT_NAME_NOT_FOUND\n");
                 break;
             default:
                 break;
@@ -32,26 +34,18 @@ namespace filter
         }
         else
         {
-            // DebugMessage("Reg Oke");
+            DebugMessage("Reg Oke");
         }
 
         FLT_ASSERT(NT_SUCCESS(status));
 
         if (NT_SUCCESS(status)) {
 
-            //
-            //  Start filtering i/o
-            //
-
             status = FltStartFiltering(g_filter_handle_);
 
             if (!NT_SUCCESS(status)) {
 
                 FileFilter::Unload();
-            }
-            else
-            {
-                // DebugMessage("Start filtering\n");
             }
         }
 
@@ -176,14 +170,6 @@ namespace filter
             return FLT_POSTOP_FINISHED_PROCESSING;
         }
 
-
-        /*
-        if (IsMyFolder(data, (PWCHAR)L"Hide") == false)
-        {
-            return FLT_POSTOP_FINISHED_PROCESSING;
-        }
-        */
-        // return FLT_POSTOP_FINISHED_PROCESSING;
         __try
         {
             if (data->Iopb->MinorFunction == IRP_MN_QUERY_DIRECTORY)
@@ -204,7 +190,6 @@ namespace filter
                 switch (info_class)
                 {
                 case FileFullDirectoryInformation:
-                    next_entry_cur_val = ulti::GetUlongAt((long long)(&(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset)));
                     status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) & (((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) & (((PFILE_FULL_DIR_INFORMATION)directory_buffer)->FileName),
@@ -213,8 +198,6 @@ namespace filter
                     );
                     break;
                 case FileBothDirectoryInformation:
-                    next_entry_cur_val = ulti::GetUlongAt((long long)(&(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset)));
-
                     status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) & (((PFILE_BOTH_DIR_INFORMATION)directory_buffer)->FileName),
@@ -223,8 +206,6 @@ namespace filter
                     );
                     break;
                 case FileDirectoryInformation:
-                    next_entry_cur_val = ulti::GetUlongAt((long long)(&(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset)));
-
                     status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) & (((PFILE_DIRECTORY_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) & (((PFILE_DIRECTORY_INFORMATION)directory_buffer)->FileName),
@@ -233,8 +214,6 @@ namespace filter
                     );
                     break;
                 case FileIdFullDirectoryInformation:
-                    next_entry_cur_val = ulti::GetUlongAt((long long)(&(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset)));
-
                     status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) & (((PFILE_ID_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) & (((PFILE_ID_FULL_DIR_INFORMATION)directory_buffer)->FileName),
@@ -243,8 +222,6 @@ namespace filter
                     );
                     break;
                 case FileIdBothDirectoryInformation:
-                    next_entry_cur_val = ulti::GetUlongAt((long long)(&(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset)));
-
                     status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) & (((PFILE_ID_BOTH_DIR_INFORMATION)directory_buffer)->FileName),
@@ -253,8 +230,6 @@ namespace filter
                     );
                     break;
                 case FileNamesInformation:
-                    next_entry_cur_val = ulti::GetUlongAt((long long)(&(((PFILE_FULL_DIR_INFORMATION)directory_buffer)->NextEntryOffset)));
-
                     status = HideFile((PUCHAR)directory_buffer,
                         (PUCHAR) & (((PFILE_NAMES_INFORMATION)directory_buffer)->NextEntryOffset),
                         (PUCHAR) & (((PFILE_NAMES_INFORMATION)directory_buffer)->FileName),
@@ -266,14 +241,6 @@ namespace filter
                     break;
                 }
                 data->IoStatus.Status = status;
-                if ((data->Iopb->OperationFlags & SL_RESTART_SCAN) > 0)
-                {
-                    // DebugMessage("SL_RESTART_SCAN");
-                }
-                if ((data->Iopb->OperationFlags & SL_RETURN_SINGLE_ENTRY) > 0)
-                {
-                    // DebugMessage("SL_RETURN_SINGLE_ENTRY");
-                }
             }
         }
         __finally
@@ -306,17 +273,13 @@ namespace filter
                 PWCHAR file_name = (PWCHAR)((PUCHAR)info + file_name_rva);
                 ULONG file_name_length = ulti::GetUlongAt((long long)info + file_name_length_rva);
 
-                // debug::PrintWstring(file_name, file_name_length);
-                
                 UNICODE_STRING long_file_name = { (USHORT)file_name_length , (USHORT)file_name_length , file_name };
 
                 if (file_name_length <= MAX_SIZE && ulti::GetNameWithoutDirectory(file_name_str, MAX_SIZE + 1, &long_file_name) == true)
                 {
-                    // DebugMessage("%S", file_name_str);
-                    /*
-                    if (ulti::CheckEqualString(file_name_str, file_to_hide_) == true)
+                    if (IsFileInHiddenList(file_name_str) == true)
                     {
-                        DebugMessage("%S", file_name_str);
+                        DebugMessage("File is hidden: %S", file_name_str);
                         if (prev_info != NULL)
                         {
                             if (cur_next_entry_val != 0)
@@ -342,7 +305,6 @@ namespace filter
                             }
                         }
                     }
-                    */
                 }
 
                 if (cur_next_entry_val == NULL)
@@ -374,23 +336,17 @@ namespace filter
         return STATUS_SUCCESS;
     }
 
-    /*
-    bool FileFilter::IsMyFolder(PFLT_CALLBACK_DATA data, PWCHAR my_folder)
+    bool FileFilter::IsFileInHiddenList(PWCHAR file_name)
     {
-        WCHAR name[MAX_SIZE] = { 0 };
-        int size = MAX_SIZE;
+        bool ret_val = false;
+        KeAcquireGuardedMutex(&file_name_lock_);
 
-        GetFileName(data, name, size);
+        ret_val = ulti::CheckEqualString(file_name, file_to_hide_);
 
-        if (ulti::CheckSubstring(name, my_folder) == false)
-        {
-            return false;
-        }
+        KeReleaseGuardedMutex(&file_name_lock_);
 
-        return true;
-
+        return ret_val;
     }
-    */
 
 
     void FileFilter::GetFileName(PFLT_CALLBACK_DATA data, PWCHAR name, int size)
@@ -467,14 +423,6 @@ namespace filter
 
     const FLT_OPERATION_REGISTRATION FileFilter::callbacks_[] =
     {
-        /*
-        { IRP_MJ_QUERY_INFORMATION,
-          0,
-          FileFilter::PreQueryInfoOperation,
-          FileFilter::PostQueryInfoOperation
-        },
-        */
-
         { IRP_MJ_DIRECTORY_CONTROL,
           0,
           FileFilter::PreDirControlOperation,

