@@ -298,7 +298,7 @@ namespace filter
                             {
                                 // the below line of code is wrong, if you do this, the system will free the wrong 
                                 // info_addr value -> BSOD
-                                // *(PVOID*)info_addr = ((PUCHAR)info + cur_next_entry_val);
+                                *(PVOID*)info_addr = ((PUCHAR)info + cur_next_entry_val);
                                 set_prev = false;
                             }
                             else
